@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #74b49b;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .weather-container {
+            max-width: 1200px;
+            height: 100vh;
+            margin: 0 auto;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding-left: 100px;
+        }
+
+        .app-title {
+            color: white;
+            font-size: 3rem;
+            font-weight: 300;
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            letter-spacing: 2px;
+        }
+
+        .search-container {
+            position: absolute;
+            top: 60px;
+            right: 50px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 12px 20px;
+            border: none;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+            background: transparent;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            width: 200px;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-input:focus {
+            border-bottom-color: white;
+        }
+
+        .search-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .search-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .weather-content {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .temperature {
+            font-size: 12rem;
+            font-weight: 100;
+            color: white;
+            line-height: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .location {
+            font-size: 3rem;
+            color: white;
+            margin-bottom: 15px;
+            font-weight: 300;
+        }
+
+        .date-time {
+            font-size: 1.5rem;
+            color: white;
+            font-weight: 300;
+        }
+
+        .weather-description {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: lowercase;
+            margin-top: 10px;
+        }
+
+        .loading {
+            color: white;
+            font-size: 1.5rem;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .error {
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+            margin-top: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 400px;
+        }
+
+        @media (max-width: 768px) {
+            .weather-container {
+                padding-left: 20px;
+                align-items: center;
+                text-align: center;
+            }
+            
+            .app-title {
+                position: static;
+                transform: none;
+                margin-bottom: 40px;
+                font-size: 2.5rem;
+            }
+            
+            .search-container {
+                position: static;
+                margin-bottom: 40px;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .search-input {
+                width: 250px;
+            }
+            
+            .temperature {
+                font-size: 8rem;
+            }
+            
+            .location {
+                font-size: 2rem;
+            }
+            
+            .weather-content {
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-container">
+        <h1 class="app-title">Weather App</h1>
+        
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="City name" id="cityInput">
+            <button class="search-btn" onclick="searchWeather()">Search Button</button>
+        </div>
+
+        <div id="weatherContent" class="weather-content">
+            <div class="temperature" id="temperature">20</div>
+            <div class="location" id="location">Bhopal</div>
+            <div class="date-time" id="datetime">12:15 Monday</div>
+            <div class="weather-description" id="description">mist</div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">Loading...</div>
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_KEY = '57f1357907ba14fb1463ddad9f022ee3';
+        const API_URL = 'https://api.openweathermap.org/data/2.5/weather';
+
+        function updateDateTime() {
+            const now = new Date();
+            const timeOptions = { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false
+            };
+            const dayOptions = { weekday: 'long' };
+            
+            const time = now.toLocaleTimeString('en-US', timeOptions);
+            const day = now.toLocaleDateString('en-US', dayOptions);
+            
+            document.getElementById('datetime').textContent = `${time} ${day}`;
+        }
+
+        function showLoading() {
+            document.getElementById('weatherContent').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('weatherContent').style.display = 'flex';
+        }
+
+        function showError(message) {
+            document.getElementById('weatherContent').style.display = 'none';
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').textContent = message;
+            document.getElementById('error').style.display = 'block';
+        }
+
+        function updateWeatherDisplay(data) {
+            const temperature = Math.round(data.main.temp);
+            const description = data.weather[0].description;
+            const cityName = data.name;
+
+            document.getElementById('temperature').textContent = temperature;
+            document.getElementById('location').textContent = cityName;
+            document.getElementById('description').textContent = description;
+
+            hideLoading();
+        }
+
+        async function fetchWeatherData(city) {
+            showLoading();
+            
+            try {
+                const response = await fetch(`${API_URL}?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`);
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('City not found. Please check the spelling.');
+                    } else if (response.status === 401) {
+                        throw new Error('Invalid API key.');
+                    } else {
+                        throw new Error(`HTTP Error: ${response.status}`);
+                    }
+                }
+                
+                const data = await response.json();
+                
+                if (data.cod && data.cod !== 200) {
+                    throw new Error(data.message || 'Weather data not available');
+                }
+                
+                updateWeatherDisplay(data);
+                
+            } catch (error) {
+                console.error('Weather API Error:', error);
+                showError(`Error: ${error.message}`);
+            }
+        }
+
+        async function getCurrentLocationWeather() {
+            if (!navigator.geolocation) {
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    showLoading();
+                    
+                    try {
+                        const response = await fetch(`${API_URL}?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`);
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch weather data for your location.');
+                        }
+                        
+                        const data = await response.json();
+                        updateWeatherDisplay(data);
+                        
+                    } catch (error) {
+                        console.error('Location weather error:', error);
+                        hideLoading();
+                    }
+                },
+                (error) => {
+                    console.log('Geolocation denied or unavailable');
+                    hideLoading();
+                }
+            );
+        }
+
+        function searchWeather() {
+            const city = document.getElementById('cityInput').value.trim();
+            if (city) {
+                fetchWeatherData(city);
+            } else {
+                showError('Please enter a city name.');
+            }
+        }
+
+        document.getElementById('cityInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchWeather();
+            }
+        });
+
+        // Initialize
+        updateDateTime();
+        setInterval(updateDateTime, 60000); 
+
+        // Show default state
+        if (!API_KEY || API_KEY === '57f1357907ba14fb1463ddad9f022ee3') {
+            setTimeout(() => {
+                showError(' ');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
